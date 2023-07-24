@@ -2,15 +2,30 @@
 
 namespace App\App\Service;
 
-use App\Domain\Model\Cart\Cart;
+use App\Entity\Cart;
+use App\Entity\Item;
+use App\Infrastructure\Exception\GetCartException;
 use App\Infrastructure\Provider\Cart\AbstractCartProvider;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Log\Logger;
 
-class GetCartService extends AbstractCartProvider
+class GetCartFromSession extends AbstractCartProvider
 {
 
-    public function getCart(Request $request): Cart
+    public function getCart(): Cart
     {
-        // TODO: Implement getCart() method.
+        $deserializationData = $this->deserializeFromSession();
+
+        $cart = (new Cart())->setAmount($deserializationData->amount)->setCurrency($deserializationData->currency);
+        foreach ($deserializationData->items as $item) {
+            $item = (new Item())->setPrice($item->price)->setQuantity($item->quantity)->setName($item->name)->setCart($cart);
+            $cart->addItem($item);
+        }
+        // without saving, only get like Object
+        return $cart;
+    }
+
+    public function deserializeFromSession()
+    {
+        return json_decode($_SESSION['cart']);
     }
 }
